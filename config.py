@@ -32,10 +32,23 @@ RSS_FEEDS = [
     # 🏛️ Zamówienia rządowe (US – kontrakty Pentagonu, codzienne, z nazwami spółek)
     "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=9&Site=945&max=20",
     # TODO: TED (przetargi UE) – RSS wycofany, wymaga integracji Search API v3
+
+    # ⚡ Szybkie / breaking
+    "https://news.google.com/rss/search?q=site:apnews.com+when:1d&hl=en-US&gl=US&ceid=US:en",  # AP News (RSS wycofany)
+    "https://trumpstruth.org/feed",                            # Posty Trumpa z Truth Social
 ]
 
 # Maksymalna liczba artykułów pobieranych z JEDNEGO feedu (balans + kontrola kosztów)
 MAX_PER_FEED = 15
+
+# Konta X/Twitter pobierane przez most Nitter (wire-flashe market-moving).
+# UWAGA: Nitter bywa niestabilny — instancję można podmienić, jeśli przestanie działać.
+NITTER_INSTANCE = "https://nitter.net"
+X_ACCOUNTS = [
+    "FirstSquawk",      # breaking macro / market headlines
+    "financialjuice",   # makro, FX, banki centralne
+    "DeItaone",         # Walter Bloomberg – breaking market headlines
+]
 
 # Kategorie tematyczne — klucz = id, wartość = opis dla klasyfikatora
 CATEGORIES = {

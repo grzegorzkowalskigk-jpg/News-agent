@@ -7,7 +7,10 @@ import calendar
 import feedparser
 from dataclasses import dataclass, field
 from datetime import datetime
-from config import RSS_FEEDS, MAX_FETCH, MAX_PER_FEED, MAX_AGE_HOURS
+from config import (
+    RSS_FEEDS, MAX_FETCH, MAX_PER_FEED, MAX_AGE_HOURS,
+    NITTER_INSTANCE, X_ACCOUNTS,
+)
 
 _TAG_RE = re.compile(r"<[^>]+>")
 
@@ -33,8 +36,10 @@ class Article:
     assets: list[str] = field(default_factory=list)
 
 
-def _parse_feed(feed_url: str) -> list[Article]:
-    """Pobiera i normalizuje do MAX_PER_FEED artykułów z jednego feedu."""
+def _parse_feed(feed_url: str, source_override: str | None = None) -> list[Article]:
+    """Pobiera i normalizuje do MAX_PER_FEED artykułów z jednego feedu.
+
+    source_override — wymusza nazwę źródła (np. "X / @FirstSquawk" dla Nittera)."""
     out = []
     try:
         feed = feedparser.parse(feed_url)
@@ -52,9 +57,12 @@ def _parse_feed(feed_url: str) -> list[Article]:
                 if age_h > MAX_AGE_HOURS:
                     continue
 
-            # Źródło z poziomu wpisu (np. Google News → "Reuters"), w razie braku z feedu
-            src = entry.get("source", {})
-            source = src.get("title") if isinstance(src, dict) and src.get("title") else feed_title
+            # Źródło: override (Nitter) → z wpisu (Google News → "Reuters") → z feedu
+            if source_override:
+                source = source_override
+            else:
+                src = entry.get("source", {})
+                source = src.get("title") if isinstance(src, dict) and src.get("title") else feed_title
 
             title = _clean(entry.get("title", ""))
             # Google News dokleja " - Źródło" na końcu tytułu — usuń
@@ -81,6 +89,11 @@ def fetch_articles() -> list[Article]:
     """Pobiera artykuły ze wszystkich feedów i przeplata je round-robin,
     żeby globalny limit MAX_FETCH nie zagłodził feedów z końca listy."""
     per_feed = [_parse_feed(u) for u in RSS_FEEDS]
+    # Konta X/Twitter przez Nitter — z wymuszoną nazwą źródła
+    for acct in X_ACCOUNTS:
+        per_feed.append(
+            _parse_feed(f"{NITTER_INSTANCE}/{acct}/rss", source_override=f"X / @{acct}")
+        )
 
     articles = []
     seen_urls = set()
