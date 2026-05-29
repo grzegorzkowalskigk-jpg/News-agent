@@ -37,24 +37,37 @@ Artykuły nieprzypisane do żadnej kategorii lub poniżej progu istotności
 ```
 News-agent/
 ├── agent/
-│   ├── fetcher.py      # pobieranie newsów z RSS (+ deduplikacja)
-│   ├── classifier.py   # klasyfikacja tematyczna + ocena istotności (Haiku)
+│   ├── fetcher.py      # pobieranie z RSS (round-robin, filtr świeżości, czyszczenie HTML)
+│   ├── cache.py        # pamięć przetworzonych URL-i (bez powtórek)
+│   ├── classifier.py   # klasyfikacja + market-impact + aktywa (Haiku)
 │   ├── summarizer.py   # podsumowywanie zakwalifikowanych (Sonnet)
 │   └── reporter.py     # raport Markdown pogrupowany po kategoriach
-├── main.py             # punkt wejścia
-├── config.py           # źródła RSS, kategorie, progi, modele
+├── main.py             # pojedynczy przebieg
+├── run_loop.py         # pętla co LOOP_INTERVAL_MIN minut
+├── config.py           # źródła RSS, kategorie, progi, modele, harmonogram
 ├── requirements.txt
 └── README.md
 ```
 
-## Planowane
+## Świeżość i cache
 
-- Wysyłka raportu na **Telegram** (Bot API — bez numeru telefonu)
-- Harmonogram (cron / scheduled task)
+- **Filtr świeżości** (`MAX_AGE_HOURS`, domyślnie 24h) — bierzemy tylko najnowsze artykuły.
+- **Cache** (`seen_articles.json`) — raz przetworzony URL nie trafia drugi raz do modelu.
+  Przy każdym przebiegu klasyfikujemy więc tylko *nowe* artykuły. Wpisy starsze niż
+  `CACHE_PRUNE_DAYS` są automatycznie usuwane.
 
 ## Uruchomienie
 
 ```bash
 pip install -r requirements.txt
-python main.py
+cp .env.example .env          # wpisz ANTHROPIC_API_KEY
+
+python main.py                # pojedynczy przebieg
+python run_loop.py            # pętla co LOOP_INTERVAL_MIN minut (Ctrl+C aby przerwać)
 ```
+
+## Planowane
+
+- Wysyłka raportu na **Telegram** (Bot API — bez numeru telefonu)
+- TED (przetargi UE) przez Search API v3
+- Szybsze źródła breaking-news (wire/Twitter) dla niższej latencji
