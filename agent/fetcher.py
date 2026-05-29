@@ -3,7 +3,7 @@
 import feedparser
 from dataclasses import dataclass
 from datetime import datetime
-from config import RSS_FEEDS, KEYWORDS, MAX_ARTICLES
+from config import RSS_FEEDS, MAX_FETCH
 
 
 @dataclass
@@ -13,11 +13,15 @@ class Article:
     url: str
     source: str
     published: str
+    # Wypełniane przez classifier.py
+    category: str | None = None
+    relevance: int = 0
 
 
 def fetch_articles() -> list[Article]:
     """Pobiera artykuły ze wszystkich skonfigurowanych feedów RSS."""
     articles = []
+    seen_urls = set()
 
     for feed_url in RSS_FEEDS:
         try:
@@ -25,26 +29,20 @@ def fetch_articles() -> list[Article]:
             source = feed.feed.get("title", feed_url)
 
             for entry in feed.entries:
-                title = entry.get("title", "")
-                summary = entry.get("summary", entry.get("description", ""))
                 url = entry.get("link", "")
-                published = entry.get("published", str(datetime.now()))
-
-                # Filtrowanie po słowach kluczowych
-                if KEYWORDS:
-                    text = (title + " " + summary).lower()
-                    if not any(kw.lower() in text for kw in KEYWORDS):
-                        continue
+                if url in seen_urls:        # deduplikacja
+                    continue
+                seen_urls.add(url)
 
                 articles.append(Article(
-                    title=title,
-                    summary=summary,
+                    title=entry.get("title", ""),
+                    summary=entry.get("summary", entry.get("description", "")),
                     url=url,
                     source=source,
-                    published=published,
+                    published=entry.get("published", str(datetime.now())),
                 ))
 
         except Exception as e:
             print(f"[fetcher] Błąd pobierania {feed_url}: {e}")
 
-    return articles[:MAX_ARTICLES]
+    return articles[:MAX_FETCH]

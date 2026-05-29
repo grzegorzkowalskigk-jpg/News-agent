@@ -37,6 +37,8 @@ def summarize_all(articles: list[Article]) -> list[dict]:
             "source": article.source,
             "url": article.url,
             "published": article.published,
+            "category": article.category,
+            "relevance": article.relevance,
             "summary": summary,
         })
     return results
