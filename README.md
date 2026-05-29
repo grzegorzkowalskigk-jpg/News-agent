@@ -21,6 +21,17 @@ Selekcja idzie wg potencjału rynkowego.
 - **Geopolityka:** The Economist (International), Foreign Policy, War on the Rocks, Defense News
 - **Zamówienia rządowe:** US DoD Contracts (kontrakty Pentagonu)
   - ⏳ TED (przetargi UE) — RSS wycofany, wymaga integracji Search API v3 (TODO)
+- **⚡ Szybkie / breaking:**
+  - AP News (przez Google News — własny RSS wycofany)
+  - Trump's Truth Social (trumpstruth.org)
+  - Konta X/Twitter przez most **Nitter** — lista w `X_ACCOUNTS` (config.py).
+    Domyślnie: @DeItaone, @FirstSquawk, @financialjuice.
+    ⚠️ Nitter bywa niestabilny (rate-limituje konta losowo); instancję
+    podmienisz w `NITTER_INSTANCE`.
+
+> Uwaga o latencji: RSS + pętla co 20 min nie dorówna sub-minutowym flashom
+> z terminala Bloomberga. Konta X (Nitter) i Trump Truth to najszybsze, co
+> daje się złapać darmowo; niżej zejdziesz tylko płatnym API X / wire'ów.
 
 ## Kategorie tematyczne
 
