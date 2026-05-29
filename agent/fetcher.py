@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from config import (
     RSS_FEEDS, MAX_FETCH, MAX_PER_FEED, MAX_AGE_HOURS,
-    NITTER_INSTANCE, X_ACCOUNTS,
+    NITTER_INSTANCE, X_ACCOUNTS, TED_ENABLED,
 )
 
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -94,6 +94,10 @@ def fetch_articles() -> list[Article]:
         per_feed.append(
             _parse_feed(f"{NITTER_INSTANCE}/{acct}/rss", source_override=f"X / @{acct}")
         )
+    # TED — przetargi UE przez API (lazy import: ted_fetcher importuje Article stąd)
+    if TED_ENABLED:
+        from agent.ted_fetcher import fetch_ted
+        per_feed.append(fetch_ted())
 
     articles = []
     seen_urls = set()

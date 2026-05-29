@@ -41,6 +41,13 @@ RSS_FEEDS = [
 # Maksymalna liczba artykułów pobieranych z JEDNEGO feedu (balans + kontrola kosztów)
 MAX_PER_FEED = 15
 
+# TED — przetargi UE przez oficjalne API v3 (bez klucza). Filtr po kodach CPV,
+# żeby z ~13 tys. dziennych ogłoszeń wyłuskać te market-moving (obronność, IT).
+TED_ENABLED = True
+TED_CPV = ["35", "72", "48"]   # 35=obronność/wojsko, 72=usługi IT, 48=oprogramowanie
+TED_DAYS = 2                   # ogłoszenia z ostatnich N dni
+TED_MAX = 15                   # ile ogłoszeń pobrać na raz
+
 # Konta X/Twitter pobierane przez most Nitter (wire-flashe market-moving).
 # UWAGA: Nitter bywa niestabilny — instancję można podmienić, jeśli przestanie działać.
 NITTER_INSTANCE = "https://nitter.net"
