@@ -91,6 +91,14 @@ CACHE_PRUNE_DAYS = 7          # po ilu dniach zapominamy URL z cache
 # Harmonogram: co ile minut odpalać agenta w trybie pętli (run_loop.py)
 LOOP_INTERVAL_MIN = 20
 
+# === Telegram (dostarczanie) ===
+# Token z @BotFather i chat_id (patrz scripts/get_chat_id.py) trzymamy w .env.
+TELEGRAM_ENABLED = True
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+# Wysyłaj na Telegram tylko newsy z market_impact >= tej wartości (0 = wszystkie zakwalifikowane)
+TELEGRAM_MIN_IMPACT = 0
+
 # Modele Claude
 CLASSIFIER_MODEL = "claude-haiku-4-6"   # tani filtr kategorii
 CLAUDE_MODEL = "claude-sonnet-4-6"      # podsumowania

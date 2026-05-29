@@ -5,7 +5,8 @@ from agent.cache import filter_new, mark_seen
 from agent.classifier import classify_and_filter
 from agent.summarizer import summarize_all
 from agent.reporter import generate_report
-from config import MAX_SUMMARIZE
+from agent.notifier import send_to_telegram, telegram_ready
+from config import MAX_SUMMARIZE, TELEGRAM_ENABLED
 
 
 def main():
@@ -40,9 +41,15 @@ def main():
     print(f"\n[3/4] Podsumowuję {len(relevant)} artykułów (Sonnet)...")
     summarized = summarize_all(relevant)
 
-    print("\n[4/4] Generuję raport...")
+    print("\n[4/5] Generuję raport...")
     report_path = generate_report(summarized)
     print(f"      Raport zapisany: {report_path}")
+
+    print("\n[5/5] Wysyłka na Telegram...")
+    if TELEGRAM_ENABLED and telegram_ready():
+        send_to_telegram(summarized)
+    else:
+        print("      Pominięto (wyłączone lub brak konfiguracji w .env).")
 
     print("\n=== Gotowe! ===")
 

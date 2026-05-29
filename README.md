@@ -48,14 +48,18 @@ Artykuły nieprzypisane do żadnej kategorii lub poniżej progu istotności
 ```
 News-agent/
 ├── agent/
-│   ├── fetcher.py      # pobieranie z RSS (round-robin, filtr świeżości, czyszczenie HTML)
+│   ├── fetcher.py      # pobieranie z RSS (round-robin, filtr świeżości, Nitter fallback)
+│   ├── ted_fetcher.py  # przetargi UE z TED API v3 (filtr CPV)
 │   ├── cache.py        # pamięć przetworzonych URL-i (bez powtórek)
 │   ├── classifier.py   # klasyfikacja + market-impact + aktywa (Haiku)
 │   ├── summarizer.py   # podsumowywanie zakwalifikowanych (Sonnet)
-│   └── reporter.py     # raport Markdown pogrupowany po kategoriach
+│   ├── reporter.py     # raport Markdown pogrupowany po kategoriach
+│   └── notifier.py     # wysyłka kart na Telegram (Bot API)
+├── scripts/
+│   └── get_chat_id.py  # pomocnik do wykrycia chat_id Telegrama
 ├── main.py             # pojedynczy przebieg
 ├── run_loop.py         # pętla co LOOP_INTERVAL_MIN minut
-├── config.py           # źródła RSS, kategorie, progi, modele, harmonogram
+├── config.py           # źródła, kategorie, progi, modele, harmonogram, Telegram
 ├── requirements.txt
 └── README.md
 ```
@@ -67,11 +71,24 @@ News-agent/
   Przy każdym przebiegu klasyfikujemy więc tylko *nowe* artykuły. Wpisy starsze niż
   `CACHE_PRUNE_DAYS` są automatycznie usuwane.
 
+## Telegram
+
+Agent wysyła każdy zakwalifikowany news jako osobną „kartę" na Telegram
+(impact, kategoria, powiązane aktywa, link). Konfiguracja bez numeru telefonu:
+
+1. Utwórz bota przez **@BotFather** → skopiuj token do `.env` (`TELEGRAM_BOT_TOKEN`).
+2. Napisz do swojego bota dowolną wiadomość na Telegramie.
+3. `python scripts/get_chat_id.py` → skopiuj `chat_id` do `.env` (`TELEGRAM_CHAT_ID`).
+4. Gotowe — kolejny przebieg `main.py` wyśle newsy na Telegram.
+
+Próg wysyłki: `TELEGRAM_MIN_IMPACT` (0 = wszystkie zakwalifikowane; np. 7 = tylko
+najmocniejsze sygnały). Wyłączenie: `TELEGRAM_ENABLED = False`.
+
 ## Uruchomienie
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env          # wpisz ANTHROPIC_API_KEY
+cp .env.example .env          # wpisz ANTHROPIC_API_KEY (+ Telegram, opcjonalnie)
 
 python main.py                # pojedynczy przebieg
 python run_loop.py            # pętla co LOOP_INTERVAL_MIN minut (Ctrl+C aby przerwać)
@@ -79,6 +96,5 @@ python run_loop.py            # pętla co LOOP_INTERVAL_MIN minut (Ctrl+C aby pr
 
 ## Planowane
 
-- Wysyłka raportu na **Telegram** (Bot API — bez numeru telefonu)
-- TED (przetargi UE) przez Search API v3
-- Szybsze źródła breaking-news (wire/Twitter) dla niższej latencji
+- Szybsze źródła breaking-news (płatne API X / wire'y) dla niższej latencji
+- Przyciski akcji w wiadomościach Telegram (archiwizuj / więcej)
