@@ -1,9 +1,20 @@
 """Moduł pobierania newsów z RSS."""
 
+import re
+import html
 import feedparser
 from dataclasses import dataclass, field
 from datetime import datetime
 from config import RSS_FEEDS, MAX_FETCH, MAX_PER_FEED
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _clean(text: str) -> str:
+    """Usuwa tagi HTML i dekoduje encje — leady z RSS bywają zaśmiecone."""
+    text = _TAG_RE.sub(" ", text or "")
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 @dataclass
@@ -20,31 +31,62 @@ class Article:
     assets: list[str] = field(default_factory=list)
 
 
+def _parse_feed(feed_url: str) -> list[Article]:
+    """Pobiera i normalizuje do MAX_PER_FEED artykułów z jednego feedu."""
+    out = []
+    try:
+        feed = feedparser.parse(feed_url)
+        feed_title = feed.feed.get("title", feed_url)
+
+        for entry in feed.entries[:MAX_PER_FEED]:
+            url = entry.get("link", "")
+            if not url:
+                continue
+
+            # Źródło z poziomu wpisu (np. Google News → "Reuters"), w razie braku z feedu
+            src = entry.get("source", {})
+            source = src.get("title") if isinstance(src, dict) and src.get("title") else feed_title
+
+            title = _clean(entry.get("title", ""))
+            # Google News dokleja " - Źródło" na końcu tytułu — usuń
+            if source and title.endswith(f" - {source}"):
+                title = title[: -len(f" - {source}")].strip()
+            summary = _clean(entry.get("summary", entry.get("description", "")))
+            # Google News daje w summary tylko link → fallback na tytuł
+            if len(summary) < 30:
+                summary = title
+
+            out.append(Article(
+                title=title,
+                summary=summary,
+                url=url,
+                source=source,
+                published=entry.get("published", str(datetime.now())),
+            ))
+    except Exception as e:
+        print(f"[fetcher] Błąd pobierania {feed_url}: {e}")
+    return out
+
+
 def fetch_articles() -> list[Article]:
-    """Pobiera artykuły ze wszystkich skonfigurowanych feedów RSS."""
+    """Pobiera artykuły ze wszystkich feedów i przeplata je round-robin,
+    żeby globalny limit MAX_FETCH nie zagłodził feedów z końca listy."""
+    per_feed = [_parse_feed(u) for u in RSS_FEEDS]
+
     articles = []
     seen_urls = set()
-
-    for feed_url in RSS_FEEDS:
-        try:
-            feed = feedparser.parse(feed_url)
-            source = feed.feed.get("title", feed_url)
-
-            for entry in feed.entries[:MAX_PER_FEED]:   # cap per feed
-                url = entry.get("link", "")
-                if url in seen_urls:        # deduplikacja
+    i = 0
+    # Przeplatanie: po jednym artykule z każdego feedu, aż wyczerpiemy wszystkie
+    while len(articles) < MAX_FETCH and any(i < len(f) for f in per_feed):
+        for feed_articles in per_feed:
+            if i < len(feed_articles):
+                art = feed_articles[i]
+                if art.url in seen_urls:
                     continue
-                seen_urls.add(url)
+                seen_urls.add(art.url)
+                articles.append(art)
+                if len(articles) >= MAX_FETCH:
+                    break
+        i += 1
 
-                articles.append(Article(
-                    title=entry.get("title", ""),
-                    summary=entry.get("summary", entry.get("description", "")),
-                    url=url,
-                    source=source,
-                    published=entry.get("published", str(datetime.now())),
-                ))
-
-        except Exception as e:
-            print(f"[fetcher] Błąd pobierania {feed_url}: {e}")
-
-    return articles[:MAX_FETCH]
+    return articles

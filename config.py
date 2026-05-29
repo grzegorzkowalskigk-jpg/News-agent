@@ -12,18 +12,22 @@ RSS_FEEDS = [
     "https://www.ft.com/rss/home",                              # Financial Times
     "https://www.bankier.pl/rss/wiadomosci.xml",                # Bankier (PL)
     "https://www.money.pl/rss/",                                # Money.pl (PL)
+    # Reuters (własny RSS wycofany) – odzyskany przez Google News, filtr po domenie + temacie
+    "https://news.google.com/rss/search?q=site:reuters.com+when:2d+business+OR+markets+OR+economy&hl=en-US&gl=US&ceid=US:en",
 
     # 💻 Technologia
     "https://techcrunch.com/feed/",                            # TechCrunch
     "https://feeds.arstechnica.com/arstechnica/index",         # Ars Technica
     "https://www.theverge.com/rss/index.xml",                  # The Verge
     "https://hnrss.org/frontpage",                             # Hacker News
+    "https://news.google.com/rss/search?q=site:reuters.com+when:2d+technology+OR+tech&hl=en-US&gl=US&ceid=US:en",  # Reuters Tech
 
     # 🌍 Geopolityka
     "https://www.economist.com/international/rss.xml",          # The Economist – świat
     "https://foreignpolicy.com/feed/",                         # Foreign Policy
     "https://warontherocks.com/feed/",                         # War on the Rocks
     "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",  # Defense News
+    "https://news.google.com/rss/search?q=site:reuters.com+when:2d+world+OR+geopolitics+OR+politics&hl=en-US&gl=US&ceid=US:en",  # Reuters World
 
     # 🏛️ Zamówienia rządowe (US – kontrakty Pentagonu, codzienne, z nazwami spółek)
     "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=9&Site=945&max=20",
