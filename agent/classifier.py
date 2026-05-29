@@ -1,7 +1,13 @@
-"""Moduł klasyfikacji tematycznej artykułów przez tani model Claude (Haiku).
+"""Klasyfikacja tematyczna + ocena potencjału rynkowego (Haiku).
 
-Każdy artykuł dostaje kategorię (jedną z config.CATEGORIES albo None) oraz
-ocenę istotności 0-10. Artykuły bez kategorii lub poniżej progu są odrzucane.
+Dla każdego artykułu model zwraca:
+- category       : jedna z config.CATEGORIES albo "brak"
+- relevance      : 0-10, jak istotny jest artykuł w obrębie kategorii
+- market_impact  : 0-10, potencjał wywołania ruchu cen aktywów na giełdzie
+- assets         : lista spółek / tickerów / instrumentów, których news dotyczy
+
+Filtr: zostają artykuły z poprawną kategorią i relevance >= próg.
+Sortowanie: malejąco po market_impact (cel = sygnały rynkowe), potem relevance.
 """
 
 import json
@@ -21,59 +27,82 @@ _VALID = set(CATEGORIES.keys())
 
 _CATEGORY_BLOCK = "\n".join(f'- "{key}": {desc}' for key, desc in CATEGORIES.items())
 
-_SYSTEM = f"""Jesteś klasyfikatorem wiadomości. Przypisujesz artykuł do JEDNEJ z kategorii:
-{_CATEGORY_BLOCK}
+_SYSTEM = f"""Jesteś analitykiem wiadomości pod kątem rynków finansowych.
 
-Jeśli artykuł nie pasuje do żadnej kategorii, użyj "brak".
-Oceń też istotność (relevance) w skali 0-10: jak ważny/wartościowy jest artykuł
-w obrębie swojej kategorii (10 = przełomowy, 0 = trywialny/clickbait).
+Przypisz artykuł do JEDNEJ kategorii:
+{_CATEGORY_BLOCK}
+Jeśli nie pasuje do żadnej, użyj "brak".
+
+Oceń dwie skale 0-10:
+- relevance: jak ważny jest artykuł w obrębie swojej kategorii.
+- market_impact: jak duży potencjał ma do wywołania ruchu cen aktywów na giełdzie
+  (akcje, indeksy, surowce, waluty, krypto). Przecieki, kontrakty, decyzje
+  regulacyjne, wyniki, fuzje = wysoki impact; komentarze ogólne = niski.
+
+Wypisz "assets": konkretne spółki, tickery lub instrumenty, których news dotyczy
+(np. ["Lockheed Martin", "LMT"], ["EUR/USD"], ["ropa Brent"]). Jeśli brak
+konkretnego aktywa, podaj pustą listę [].
 
 Odpowiadasz WYŁĄCZNIE poprawnym JSON-em, bez komentarzy:
-{{"category": "<id_kategorii_lub_brak>", "relevance": <0-10>}}"""
+{{"category": "<id_lub_brak>", "relevance": <0-10>, "market_impact": <0-10>, "assets": ["..."]}}"""
 
 
-def _classify_one(article: Article) -> tuple[str | None, int]:
-    """Zwraca (kategoria|None, istotność)."""
+def _classify_one(article: Article) -> dict:
+    """Zwraca dict z polami category/relevance/market_impact/assets."""
     user = f"Tytuł: {article.title}\nLead: {article.summary[:500]}"
+    fallback = {"category": None, "relevance": 0, "market_impact": 0, "assets": []}
 
     try:
         msg = client.messages.create(
             model=CLASSIFIER_MODEL,
-            max_tokens=60,
+            max_tokens=200,
             system=_SYSTEM,
             messages=[{"role": "user", "content": user}],
         )
-        raw = msg.content[0].text.strip()
-        data = json.loads(raw)
-        category = data.get("category", "brak")
-        relevance = int(data.get("relevance", 0))
+        data = json.loads(msg.content[0].text.strip())
 
+        category = data.get("category", "brak")
         if category not in _VALID:
-            return None, relevance
-        return category, relevance
+            category = None
+
+        assets = data.get("assets", [])
+        if not isinstance(assets, list):
+            assets = []
+
+        return {
+            "category": category,
+            "relevance": int(data.get("relevance", 0)),
+            "market_impact": int(data.get("market_impact", 0)),
+            "assets": [str(a) for a in assets],
+        }
 
     except (json.JSONDecodeError, ValueError, KeyError, IndexError) as e:
-        print(f"[classifier] Nie sparsowano odpowiedzi dla '{article.title[:50]}': {e}")
-        return None, 0
+        print(f"[classifier] Nie sparsowano '{article.title[:50]}': {e}")
+        return fallback
     except Exception as e:
-        print(f"[classifier] Błąd API dla '{article.title[:50]}': {e}")
-        return None, 0
+        print(f"[classifier] Błąd API '{article.title[:50]}': {e}")
+        return fallback
 
 
 def classify_and_filter(articles: list[Article]) -> list[Article]:
-    """Klasyfikuje artykuły i zwraca tylko te z kategorią i istotnością >= próg,
-    posortowane malejąco po istotności."""
+    """Klasyfikuje, odfiltrowuje poniżej progu i sortuje po potencjale rynkowym."""
     kept = []
     for i, art in enumerate(articles, 1):
-        category, relevance = _classify_one(art)
-        art.category = category
-        art.relevance = relevance
+        res = _classify_one(art)
+        art.category = res["category"]
+        art.relevance = res["relevance"]
+        art.market_impact = res["market_impact"]
+        art.assets = res["assets"]
 
-        status = "✗ odrzucony"
-        if category and relevance >= RELEVANCE_THRESHOLD:
+        if art.category and art.relevance >= RELEVANCE_THRESHOLD:
             kept.append(art)
-            status = f"✓ {category} ({relevance})"
-        print(f"  [{i}/{len(articles)}] {status}: {art.title[:55]}")
+            tag = f"✓ {art.category} rel={art.relevance} impact={art.market_impact}"
+            if art.assets:
+                tag += f" → {', '.join(art.assets[:3])}"
+        else:
+            tag = "✗ odrzucony"
+        print(f"  [{i}/{len(articles)}] {tag}: {art.title[:55]}")
 
-    kept.sort(key=lambda a: a.relevance, reverse=True)
+    # Sortuj wg potencjału rynkowego (cel agenta), potem ogólnej istotności
+    kept.sort(key=lambda a: (a.market_impact, a.relevance), reverse=True)
     return kept

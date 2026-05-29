@@ -5,13 +5,33 @@ load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
-# Źródła RSS do monitorowania
+# Źródła RSS — wszystkie zweryfikowane jako żywe (HTTP 200). Pogrupowane po temacie.
 RSS_FEEDS = [
-    "https://feeds.bbci.co.uk/news/rss.xml",            # BBC News
-    "https://rss.cnn.com/rss/edition.rss",              # CNN
-    "https://feeds.reuters.com/reuters/topNews",        # Reuters
-    "https://www.investing.com/rss/news.rss",           # Investing.com
+    # 💰 Finanse
+    "https://www.economist.com/finance-and-economics/rss.xml",   # The Economist – finanse
+    "https://www.ft.com/rss/home",                              # Financial Times
+    "https://www.bankier.pl/rss/wiadomosci.xml",                # Bankier (PL)
+    "https://www.money.pl/rss/",                                # Money.pl (PL)
+
+    # 💻 Technologia
+    "https://techcrunch.com/feed/",                            # TechCrunch
+    "https://feeds.arstechnica.com/arstechnica/index",         # Ars Technica
+    "https://www.theverge.com/rss/index.xml",                  # The Verge
+    "https://hnrss.org/frontpage",                             # Hacker News
+
+    # 🌍 Geopolityka
+    "https://www.economist.com/international/rss.xml",          # The Economist – świat
+    "https://foreignpolicy.com/feed/",                         # Foreign Policy
+    "https://warontherocks.com/feed/",                         # War on the Rocks
+    "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",  # Defense News
+
+    # 🏛️ Zamówienia rządowe (US – kontrakty Pentagonu, codzienne, z nazwami spółek)
+    "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=9&Site=945&max=20",
+    # TODO: TED (przetargi UE) – RSS wycofany, wymaga integracji Search API v3
 ]
+
+# Maksymalna liczba artykułów pobieranych z JEDNEGO feedu (balans + kontrola kosztów)
+MAX_PER_FEED = 15
 
 # Kategorie tematyczne — klucz = id, wartość = opis dla klasyfikatora
 CATEGORIES = {
@@ -24,8 +44,9 @@ CATEGORIES = {
 # Minimalna istotność (0-10), poniżej której artykuł jest odrzucany
 RELEVANCE_THRESHOLD = 5
 
-# Maksymalna liczba artykułów POBIERANYCH z RSS (przed klasyfikacją)
-MAX_FETCH = 60
+# Maksymalna liczba artykułów POBIERANYCH łącznie ze wszystkich feedów (przed klasyfikacją).
+# Z 13 feedów × MAX_PER_FEED=15 ≈ 195, więc limit dobrany tak, by każdy feed dołożył porcję.
+MAX_FETCH = 200
 
 # Maksymalna liczba artykułów PODSUMOWYWANYCH (po klasyfikacji, najistotniejsze)
 MAX_SUMMARIZE = 15

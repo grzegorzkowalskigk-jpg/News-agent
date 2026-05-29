@@ -1,9 +1,9 @@
 """Moduł pobierania newsów z RSS."""
 
 import feedparser
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from config import RSS_FEEDS, MAX_FETCH
+from config import RSS_FEEDS, MAX_FETCH, MAX_PER_FEED
 
 
 @dataclass
@@ -16,6 +16,8 @@ class Article:
     # Wypełniane przez classifier.py
     category: str | None = None
     relevance: int = 0
+    market_impact: int = 0
+    assets: list[str] = field(default_factory=list)
 
 
 def fetch_articles() -> list[Article]:
@@ -28,7 +30,7 @@ def fetch_articles() -> list[Article]:
             feed = feedparser.parse(feed_url)
             source = feed.feed.get("title", feed_url)
 
-            for entry in feed.entries:
+            for entry in feed.entries[:MAX_PER_FEED]:   # cap per feed
                 url = entry.get("link", "")
                 if url in seen_urls:        # deduplikacja
                     continue

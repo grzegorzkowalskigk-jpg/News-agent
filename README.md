@@ -5,8 +5,22 @@ AI agent do pobierania, czytania i podsumowywania wiadomości z różnych źród
 ## Pipeline
 
 ```
-RSS → klasyfikacja (Haiku) → filtr istotności → podsumowanie (Sonnet) → raport .md
+RSS (13 źródeł) → klasyfikacja + ocena market-impact (Haiku) → filtr istotności
+              → sortowanie po potencjale rynkowym → podsumowanie (Sonnet) → raport .md
 ```
+
+Cel agenta: wyłapywać informacje i przecieki mogące **poruszyć cenami aktywów**.
+Klasyfikator dla każdego artykułu zwraca kategorię, istotność (0-10),
+**market_impact (0-10)** oraz listę powiązanych aktywów (spółki / tickery / instrumenty).
+Selekcja idzie wg potencjału rynkowego.
+
+## Źródła (PL + EN, bez tłumaczenia)
+
+- **Finanse:** The Economist, Financial Times, Bankier, Money.pl
+- **Technologia:** TechCrunch, Ars Technica, The Verge, Hacker News
+- **Geopolityka:** The Economist (International), Foreign Policy, War on the Rocks, Defense News
+- **Zamówienia rządowe:** US DoD Contracts (kontrakty Pentagonu)
+  - ⏳ TED (przetargi UE) — RSS wycofany, wymaga integracji Search API v3 (TODO)
 
 ## Kategorie tematyczne
 

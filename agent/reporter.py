@@ -36,9 +36,17 @@ def generate_report(articles: list[dict], output_dir: str = "reports") -> str:
         lines += [f"## {label}", ""]
 
         for art in group:
+            assets = art.get("assets") or []
+            assets_line = f"**Aktywa:** {', '.join(assets)}" if assets else ""
             lines += [
-                f"### {art['title']}  `({art['relevance']}/10)`",
+                f"### {art['title']}",
+                f"📈 **Impact:** {art.get('market_impact', 0)}/10 | "
+                f"**Istotność:** {art['relevance']}/10",
                 f"**Źródło:** {art['source']} | **Data:** {art['published']}",
+            ]
+            if assets_line:
+                lines.append(assets_line)
+            lines += [
                 f"**Link:** {art['url']}",
                 "",
                 art["summary"],
