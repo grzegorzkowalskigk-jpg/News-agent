@@ -55,6 +55,17 @@ MAX_FETCH = 200
 # Maksymalna liczba artykułów PODSUMOWYWANYCH (po klasyfikacji, najistotniejsze)
 MAX_SUMMARIZE = 15
 
+# Świeżość: bierzemy tylko artykuły opublikowane w ciągu ostatnich N godzin.
+# (None = bez filtra wieku). Interesują nas tylko najnowsze newsy.
+MAX_AGE_HOURS = 24
+
+# Cache przetworzonych URL-i — by nie klasyfikować tych samych artykułów w kółko.
+CACHE_FILE = "seen_articles.json"
+CACHE_PRUNE_DAYS = 7          # po ilu dniach zapominamy URL z cache
+
+# Harmonogram: co ile minut odpalać agenta w trybie pętli (run_loop.py)
+LOOP_INTERVAL_MIN = 20
+
 # Modele Claude
 CLASSIFIER_MODEL = "claude-haiku-4-6"   # tani filtr kategorii
 CLAUDE_MODEL = "claude-sonnet-4-6"      # podsumowania

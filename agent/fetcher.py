@@ -2,10 +2,12 @@
 
 import re
 import html
+import time
+import calendar
 import feedparser
 from dataclasses import dataclass, field
 from datetime import datetime
-from config import RSS_FEEDS, MAX_FETCH, MAX_PER_FEED
+from config import RSS_FEEDS, MAX_FETCH, MAX_PER_FEED, MAX_AGE_HOURS
 
 _TAG_RE = re.compile(r"<[^>]+>")
 
@@ -42,6 +44,13 @@ def _parse_feed(feed_url: str) -> list[Article]:
             url = entry.get("link", "")
             if not url:
                 continue
+
+            # Filtr świeżości — pomijamy artykuły starsze niż MAX_AGE_HOURS
+            pub = entry.get("published_parsed") or entry.get("updated_parsed")
+            if MAX_AGE_HOURS and pub:
+                age_h = (time.time() - calendar.timegm(pub)) / 3600
+                if age_h > MAX_AGE_HOURS:
+                    continue
 
             # Źródło z poziomu wpisu (np. Google News → "Reuters"), w razie braku z feedu
             src = entry.get("source", {})

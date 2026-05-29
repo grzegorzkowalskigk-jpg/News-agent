@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 reports/
+seen_articles.json
 *.egg-info/
 dist/
 build/
