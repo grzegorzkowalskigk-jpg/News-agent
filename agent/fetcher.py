@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from config import (
     RSS_FEEDS, MAX_FETCH, MAX_PER_FEED, MAX_AGE_HOURS,
-    NITTER_INSTANCE, X_ACCOUNTS, TED_ENABLED,
+    NITTER_INSTANCES, X_ACCOUNTS, TED_ENABLED,
 )
 
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -85,15 +85,24 @@ def _parse_feed(feed_url: str, source_override: str | None = None) -> list[Artic
     return out
 
 
+def _fetch_x(account: str) -> list[Article]:
+    """Pobiera tweety konta przez Nitter, próbując kolejnych instancji aż któraś
+    zwróci wpisy (Nitter rate-limituje/pada losowo)."""
+    for instance in NITTER_INSTANCES:
+        articles = _parse_feed(f"{instance}/{account}/rss", source_override=f"X / @{account}")
+        if articles:
+            return articles
+    print(f"[fetcher] X/@{account}: żadna instancja Nittera nie zwróciła wpisów")
+    return []
+
+
 def fetch_articles() -> list[Article]:
     """Pobiera artykuły ze wszystkich feedów i przeplata je round-robin,
     żeby globalny limit MAX_FETCH nie zagłodził feedów z końca listy."""
     per_feed = [_parse_feed(u) for u in RSS_FEEDS]
-    # Konta X/Twitter przez Nitter — z wymuszoną nazwą źródła
+    # Konta X/Twitter przez Nitter — z fallbackiem między instancjami
     for acct in X_ACCOUNTS:
-        per_feed.append(
-            _parse_feed(f"{NITTER_INSTANCE}/{acct}/rss", source_override=f"X / @{acct}")
-        )
+        per_feed.append(_fetch_x(acct))
     # TED — przetargi UE przez API (lazy import: ted_fetcher importuje Article stąd)
     if TED_ENABLED:
         from agent.ted_fetcher import fetch_ted

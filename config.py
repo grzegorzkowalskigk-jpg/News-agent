@@ -49,8 +49,13 @@ TED_DAYS = 2                   # ogłoszenia z ostatnich N dni
 TED_MAX = 15                   # ile ogłoszeń pobrać na raz
 
 # Konta X/Twitter pobierane przez most Nitter (wire-flashe market-moving).
-# UWAGA: Nitter bywa niestabilny — instancję można podmienić, jeśli przestanie działać.
-NITTER_INSTANCE = "https://nitter.net"
+# Nitter bywa niestabilny — podajemy listę instancji; agent próbuje kolejno,
+# aż któraś zwróci wpisy (fallback). Kolejność = priorytet. Zweryfikowane jako żywe.
+NITTER_INSTANCES = [
+    "https://nitter.net",
+    "https://xcancel.com",
+    "https://nitter.tiekoetter.com",
+]
 X_ACCOUNTS = [
     "FirstSquawk",      # breaking macro / market headlines
     "financialjuice",   # makro, FX, banki centralne
